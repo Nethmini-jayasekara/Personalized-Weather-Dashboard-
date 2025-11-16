@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -34,7 +36,7 @@ class _WeatherDashboardState extends State<WeatherDashboard> {
   void initState() {
     super.initState();
     _indexController = TextEditingController(
-      text: widget.initialIndex ?? '194174B',
+      text: widget.initialIndex ?? '224087A',
     );
     _loadCachedData();
   }
@@ -164,6 +166,24 @@ class _WeatherDashboardState extends State<WeatherDashboard> {
       } else {
         throw Exception('Failed to load weather data: ${response.statusCode}');
       }
+    } on SocketException {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Network Error: No internet connection.\nPlease check your data or WiFi connection.\n\nShowing cached data if available.';
+        _isCached = true;
+      });
+    } on TimeoutException {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Request Timeout: Connection too slow.\nPlease check your internet connection.\n\nShowing cached data if available.';
+        _isCached = true;
+      });
+    } on http.ClientException {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Connection Failed: Unable to reach weather service.\nPlease check your internet connection.\n\nShowing cached data if available.';
+        _isCached = true;
+      });
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -223,7 +243,7 @@ class _WeatherDashboardState extends State<WeatherDashboard> {
                       controller: _indexController,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
-                        hintText: 'e.g., 194174B',
+                        hintText: 'e.g., 224087A',
                         prefixIcon: Icon(Icons.person),
                       ),
                       textCapitalization: TextCapitalization.characters,
